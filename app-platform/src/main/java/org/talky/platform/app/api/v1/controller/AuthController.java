@@ -1,6 +1,5 @@
 package org.talky.platform.app.api.v1.controller;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.talky.platform.app.api.v1.request.LoginRequest;
 import org.talky.platform.app.api.v1.request.RegisterRequest;
@@ -24,7 +23,6 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<RegisterResponse> register(
             @RequestBody RegisterRequest request
     ) {

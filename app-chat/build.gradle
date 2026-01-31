@@ -9,5 +9,5 @@ dependencies {
     implementation project(':storage:chat-db')
 
     testImplementation 'io.projectreactor:reactor-test'
+    testImplementation 'io.rest-assured:rest-assured'
 }
-1
