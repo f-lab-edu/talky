@@ -1,7 +1,10 @@
+pluginManagement {
+    includeBuild 'build-logic'
+}
+
 rootProject.name = 'talky'
 
 include 'app-platform'
 include 'app-chat'
 include 'storage:platform-db'
 include 'storage:chat-db'
-
