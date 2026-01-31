@@ -1,0 +1,9 @@
+/**
+ * 기본 공통 설정
+ */
+group = 'org.talky'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}

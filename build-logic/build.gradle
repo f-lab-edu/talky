@@ -1,0 +1,36 @@
+/**
+ * build-logic은 "플러그인을 만드는 프로젝트"
+ *
+ * src/main/groovy/*.gradle 파일들이 convention plugin으로 컴파일됨
+ * 예: talky.java-conventions.gradle → id 'talky.java-conventions'로 사용 가능
+ */
+plugins {
+    id 'groovy-gradle-plugin'
+}
+
+/**
+ * 플러그인 JAR를 다운로드할 저장소
+ * - mavenCentral: 일반 라이브러리
+ * - gradlePluginPortal: Gradle 플러그인
+ */
+repositories {
+    mavenCentral()
+    gradlePluginPortal()
+}
+
+/**
+ * convention plugin 안에서 외부 플러그인을 사용하려면 여기서 의존성으로 가져와야 함
+ *
+ * 일반 프로젝트에서는 plugins { id 'org.springframework.boot' version '3.4.1' } 만 쓰면
+ * Gradle이 알아서 가져오지만, build-logic은 "플러그인을 만드는 프로젝트"라서
+ * 컴파일 시점에 해당 플러그인이 뭔지 알아야 함
+ *
+ * 참고: plugins 블록은 sugar syntax (편의 문법)
+ * - 일반 프로젝트: plugins { id 'xxx' version 'yyy' } → Gradle이 내부적으로 dependencies처럼 처리
+ * - build-logic: dependencies { implementation 'xxx:yyy' } → 직접 명시
+ * 결국 둘 다 Gradle Plugin Portal/Maven Central에서 JAR 가져오는 건 똑같음
+ */
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-gradle-plugin:3.4.1'
+    implementation 'io.spring.gradle:dependency-management-plugin:1.1.7'
+}
