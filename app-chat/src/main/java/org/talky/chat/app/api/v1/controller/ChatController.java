@@ -1,6 +1,5 @@
 package org.talky.chat.app.api.v1.controller;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.talky.chat.app.api.v1.request.CreateChatRequest;
 import org.talky.chat.app.api.v1.response.*;
@@ -16,7 +15,6 @@ import java.util.List;
 public class ChatController {
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     public Mono<ApiResponse<CreateChatResponse>> createChat(
             @RequestHeader("Authorization") String authorization,
             @RequestBody CreateChatRequest request

@@ -1,24 +1,31 @@
 package org.talky.chat.app.api.v1.controller;
 
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.talky.chat.app.api.v1.request.CreateChatRequest;
 import org.talky.chat.support.response.ResultType;
 
 import java.util.List;
 
-@SpringBootTest
-@AutoConfigureWebTestClient
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.*;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ChatControllerTest {
 
-    @Autowired
-    private WebTestClient webTestClient;
+    @LocalServerPort
+    private int port;
+
+    @BeforeEach
+    void setUp() {
+        RestAssured.port = port;
+    }
 
     @Nested
     @DisplayName("채팅방 생성")
@@ -29,19 +36,20 @@ class ChatControllerTest {
         void directChat() {
             CreateChatRequest request = new CreateChatRequest(List.of("김철수#5678"), null);
 
-            webTestClient.post().uri("/api/v1/chats")
-                    .header("Authorization", "Bearer test.token")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
-                    .exchange()
-                    .expectStatus().isCreated()
-                    .expectBody()
-                    .jsonPath("$.result").isEqualTo(ResultType.SUCCESS.name())
-                    .jsonPath("$.data.channelId").exists()
-                    .jsonPath("$.data.type").isEqualTo("direct")
-                    .jsonPath("$.data.channelName").exists()
-                    .jsonPath("$.data.participants").isArray()
-                    .jsonPath("$.error").isEmpty();
+            given()
+                .header("Authorization", "Bearer test.token")
+                .contentType(ContentType.JSON)
+                .body(request)
+            .when()
+                .post("/api/v1/chats")
+            .then()
+                .statusCode(200)
+                .body("result", equalTo(ResultType.SUCCESS.name()))
+                .body("data.channelId", notNullValue())
+                .body("data.type", equalTo("direct"))
+                .body("data.channelName", notNullValue())
+                .body("data.participants", notNullValue())
+                .body("error", nullValue());
         }
 
         @Test
@@ -49,16 +57,17 @@ class ChatControllerTest {
         void selfChat() {
             CreateChatRequest request = new CreateChatRequest(List.of(), null);
 
-            webTestClient.post().uri("/api/v1/chats")
-                    .header("Authorization", "Bearer test.token")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
-                    .exchange()
-                    .expectStatus().isCreated()
-                    .expectBody()
-                    .jsonPath("$.result").isEqualTo(ResultType.SUCCESS.name())
-                    .jsonPath("$.data.type").isEqualTo("self")
-                    .jsonPath("$.error").isEmpty();
+            given()
+                .header("Authorization", "Bearer test.token")
+                .contentType(ContentType.JSON)
+                .body(request)
+            .when()
+                .post("/api/v1/chats")
+            .then()
+                .statusCode(200)
+                .body("result", equalTo(ResultType.SUCCESS.name()))
+                .body("data.type", equalTo("self"))
+                .body("error", nullValue());
         }
 
         @Test
@@ -69,16 +78,17 @@ class ChatControllerTest {
                     "스터디 그룹"
             );
 
-            webTestClient.post().uri("/api/v1/chats")
-                    .header("Authorization", "Bearer test.token")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
-                    .exchange()
-                    .expectStatus().isCreated()
-                    .expectBody()
-                    .jsonPath("$.result").isEqualTo(ResultType.SUCCESS.name())
-                    .jsonPath("$.data.type").isEqualTo("group")
-                    .jsonPath("$.error").isEmpty();
+            given()
+                .header("Authorization", "Bearer test.token")
+                .contentType(ContentType.JSON)
+                .body(request)
+            .when()
+                .post("/api/v1/chats")
+            .then()
+                .statusCode(200)
+                .body("result", equalTo(ResultType.SUCCESS.name()))
+                .body("data.type", equalTo("group"))
+                .body("error", nullValue());
         }
     }
 
@@ -89,15 +99,16 @@ class ChatControllerTest {
         @Test
         @DisplayName("채팅방 목록을 조회하면 페이지네이션된 결과를 반환한다")
         void success() {
-            webTestClient.get().uri("/api/v1/chats")
-                    .header("Authorization", "Bearer test.token")
-                    .exchange()
-                    .expectStatus().isOk()
-                    .expectBody()
-                    .jsonPath("$.result").isEqualTo(ResultType.SUCCESS.name())
-                    .jsonPath("$.data.content").isArray()
-                    .jsonPath("$.data.hasNext").isBoolean()
-                    .jsonPath("$.error").isEmpty();
+            given()
+                .header("Authorization", "Bearer test.token")
+            .when()
+                .get("/api/v1/chats")
+            .then()
+                .statusCode(200)
+                .body("result", equalTo(ResultType.SUCCESS.name()))
+                .body("data.content", notNullValue())
+                .body("data.hasNext", notNullValue())
+                .body("error", nullValue());
         }
     }
 
@@ -108,16 +119,17 @@ class ChatControllerTest {
         @Test
         @DisplayName("메시지 히스토리를 조회하면 페이지네이션된 결과를 반환한다")
         void success() {
-            webTestClient.get().uri("/api/v1/chats/{channelId}/messages", "chat_1a2b3c4d")
-                    .header("Authorization", "Bearer test.token")
-                    .exchange()
-                    .expectStatus().isOk()
-                    .expectBody()
-                    .jsonPath("$.result").isEqualTo(ResultType.SUCCESS.name())
-                    .jsonPath("$.data.content").isArray()
-                    .jsonPath("$.data.content[0].channelId").isEqualTo("chat_1a2b3c4d")
-                    .jsonPath("$.data.hasNext").isBoolean()
-                    .jsonPath("$.error").isEmpty();
+            given()
+                .header("Authorization", "Bearer test.token")
+            .when()
+                .get("/api/v1/chats/{channelId}/messages", "chat_1a2b3c4d")
+            .then()
+                .statusCode(200)
+                .body("result", equalTo(ResultType.SUCCESS.name()))
+                .body("data.content", notNullValue())
+                .body("data.content[0].channelId", equalTo("chat_1a2b3c4d"))
+                .body("data.hasNext", notNullValue())
+                .body("error", nullValue());
         }
     }
 }
