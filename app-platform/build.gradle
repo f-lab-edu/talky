@@ -6,7 +6,9 @@ plugins {
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.security:spring-security-crypto'
     implementation project(':storage:platform-db')
 
     testImplementation 'io.rest-assured:rest-assured'
+    testImplementation 'com.h2database:h2'
 }

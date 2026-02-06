@@ -1,42 +1,55 @@
 package org.talky.platform.app.api.v1.controller;
 
-import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.talky.platform.app.api.ApiFraudChecker;
 import org.talky.platform.app.api.v1.request.LoginRequest;
 import org.talky.platform.app.api.v1.request.RegisterRequest;
 import org.talky.platform.app.api.v1.response.CheckLoginIdResponse;
 import org.talky.platform.app.api.v1.response.LoginResponse;
 import org.talky.platform.app.api.v1.response.RegisterResponse;
+import org.talky.platform.app.service.AuthService;
+import org.talky.platform.app.vo.User;
 import org.talky.platform.support.response.ApiResponse;
 
+@RequestMapping("/api/v1")
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
-    @GetMapping("/check-login-id")
-    public ApiResponse<CheckLoginIdResponse> checkLoginId(
-            @RequestParam String loginId
-    ) {
-        // TODO: 실제 중복 체크 로직은 서비스 레이어에서 구현
-        boolean available = true;
+    private final AuthService authService;
+    private final ApiFraudChecker apiFraudChecker;
 
-        return ApiResponse.success(new CheckLoginIdResponse(available));
+    /**
+     * 로그인 아이디 중복 체크
+     */
+    @GetMapping("/auth/check-login-id")
+    public ApiResponse<CheckLoginIdResponse> checkLoginId(
+            @RequestParam String loginId,
+            HttpServletRequest request
+    ) {
+        apiFraudChecker.checkLoginId(request);
+
+        boolean exists = authService.checkLoginId(loginId);
+        return ApiResponse.success(new CheckLoginIdResponse(exists));
     }
 
-    @PostMapping("/register")
+    @PostMapping("/auth/register")
     public ApiResponse<RegisterResponse> register(
             @RequestBody RegisterRequest request
     ) {
-        // TODO: 실제 회원가입 로직은 서비스 레이어에서 구현
-        RegisterResponse response = new RegisterResponse(
-                request.loginId(),
-                request.nickname(),
-                request.nickname() + "#1234"
-        );
-
-        return ApiResponse.success(response);
+        User user = authService.register(request.toCommand());
+        return ApiResponse.success(RegisterResponse.from(user));
     }
 
-    @PostMapping("/login")
+    @PostMapping("/auth/login")
     public ApiResponse<LoginResponse> login(
             @RequestBody LoginRequest request
     ) {
@@ -51,7 +64,7 @@ public class AuthController {
         return ApiResponse.success(response);
     }
 
-    @PostMapping("/logout")
+    @PostMapping("/auth/logout")
     public ApiResponse<Void> logout(
             @RequestHeader("Authorization") String authorization
     ) {
