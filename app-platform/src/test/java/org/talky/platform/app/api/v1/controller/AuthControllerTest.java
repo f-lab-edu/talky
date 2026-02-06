@@ -10,11 +10,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.talky.platform.app.api.v1.request.LoginRequest;
 import org.talky.platform.app.api.v1.request.RegisterRequest;
-import org.talky.platform.support.error.ErrorCode;
 import org.talky.platform.support.response.ResultType;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class AuthControllerTest {
@@ -32,22 +33,22 @@ class AuthControllerTest {
     class CheckLoginId {
 
         @Test
-        @DisplayName("사용 가능한 loginId로 요청하면 사용할 수 있다고 응답한다")
-        void available() {
+        @DisplayName("존재하지 않는 loginId면 exists=false를 응답한다")
+        void notExists() {
             given()
-                .param("loginId", "user1234")
+                .param("loginId", "user12341234")
             .when()
                 .get("/api/v1/auth/check-login-id")
             .then()
                 .statusCode(200)
                 .body("result", equalTo(ResultType.SUCCESS.name()))
-                .body("data.available", equalTo(true))
+                .body("data.exists", equalTo(false))
                 .body("error", nullValue());
         }
 
 //        @Test
-//        @DisplayName("이미 사용 중인 loginId로 요청하면 사용할 수 없다고 응답한다")
-//        void unavailable() {
+//        @DisplayName("존재하는 loginId면 exists=true를 응답한다")
+//        void exists() {
 //            given()
 //                .param("loginId", "duplicated1234")
 //            .when()
@@ -55,7 +56,7 @@ class AuthControllerTest {
 //            .then()
 //                .statusCode(200)
 //                .body("result", equalTo(ResultType.SUCCESS.name()))
-//                .body("data.available", equalTo(false))
+//                .body("data.exists", equalTo(true))
 //                .body("error", nullValue());
 //        }
 //
