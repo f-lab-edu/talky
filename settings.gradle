@@ -6,5 +6,6 @@ rootProject.name = 'talky'
 
 include 'app-platform'
 include 'app-chat'
+include 'auth-core'
 include 'storage:platform-db'
 include 'storage:chat-db'

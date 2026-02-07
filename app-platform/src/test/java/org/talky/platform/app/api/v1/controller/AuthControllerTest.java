@@ -209,7 +209,14 @@ class AuthControllerTest {
         @Test
         @DisplayName("유효한 정보로 로그인하면 사용자 정보와 토큰을 반환한다")
         void success() {
-            LoginRequest request = new LoginRequest("user1234", "mypassword123");
+            RegisterRequest registerRequest = new RegisterRequest("loginuser1", "mypassword123", "테스트");
+            given()
+                .contentType(ContentType.JSON)
+                .body(registerRequest)
+            .when()
+                .post("/api/v1/auth/register");
+
+            LoginRequest request = new LoginRequest("loginuser1", "mypassword123");
 
             given()
                 .contentType(ContentType.JSON)
@@ -219,10 +226,11 @@ class AuthControllerTest {
             .then()
                 .statusCode(200)
                 .body("result", equalTo(ResultType.SUCCESS.name()))
-                .body("data.loginId", equalTo("user1234"))
+                .body("data.loginId", equalTo("loginuser1"))
                 .body("data.nickname", notNullValue())
                 .body("data.userTag", notNullValue())
-                .body("data.token", notNullValue())
+                .body("data.accessToken", notNullValue())
+                .body("data.refreshToken", notNullValue())
                 .body("error", nullValue());
         }
 

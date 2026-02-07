@@ -2,8 +2,10 @@ package org.talky.platform.storage.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.talky.auth.UserRole;
 
 @Entity
 @Table(name = "users")
@@ -12,7 +14,6 @@ import lombok.NoArgsConstructor;
 public class UserEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String loginId;
@@ -23,12 +24,21 @@ public class UserEntity {
 
     private String userTag;
 
+    @Enumerated(EnumType.STRING)
+    private UserRole role = UserRole.USER;
+
+    private String status = "ACTIVE";
+
     private boolean deleted = false;
 
-    public UserEntity(String loginId, String password, String nickname, String userTag) {
+    @Builder
+    public UserEntity(Long id, String loginId, String password, String nickname,
+                      String userTag, UserRole role) {
+        this.id = id;
         this.loginId = loginId;
         this.password = password;
         this.nickname = nickname;
         this.userTag = userTag;
+        this.role = role;
     }
 }

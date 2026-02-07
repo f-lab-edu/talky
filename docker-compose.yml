@@ -1,0 +1,13 @@
+services:
+  platform-db:
+    image: mysql:8.0
+    container_name: talky-platform-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: talky_platform
+      MYSQL_USER: talky
+      MYSQL_PASSWORD: talky
+    ports:
+      - "53306:3306"
+    volumes:
+      - ./storage/platform-db/sql:/docker-entrypoint-initdb.d

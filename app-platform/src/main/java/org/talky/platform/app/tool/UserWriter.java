@@ -15,6 +15,6 @@ public class UserWriter {
     public User save(User user) {
         UserEntity entity = UserMapper.toEntity(user);
         UserEntity saved = userRepository.save(entity);
-        return UserMapper.toDomain(saved);
+        return UserMapper.toVo(saved);
     }
 }
