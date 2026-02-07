@@ -13,7 +13,7 @@ public class RegisterValidator {
     private final UserReader userReader;
 
     public void validate(User user) {
-        if (userReader.existLoginId(user.getLoginId())) {
+        if (userReader.existLoginId(user.loginId())) {
             throw new CoreException(ErrorCode.DUPLICATED_RESOURCE);
         }
     }

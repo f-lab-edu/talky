@@ -9,9 +9,9 @@ public record RegisterResponse(
 ) {
     public static RegisterResponse from(User user) {
         return new RegisterResponse(
-                user.getLoginId(),
-                user.getNickname(),
-                user.getUserTag()
+                user.loginId(),
+                user.nickname(),
+                user.userTag()
         );
     }
 }

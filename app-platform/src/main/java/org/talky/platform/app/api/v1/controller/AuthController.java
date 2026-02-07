@@ -10,13 +10,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.talky.platform.app.api.ApiFraudChecker;
+import org.talky.platform.app.api.ClientIpResolver;
+import org.talky.platform.app.api.UserAgentParser;
 import org.talky.platform.app.api.v1.request.LoginRequest;
 import org.talky.platform.app.api.v1.request.RegisterRequest;
 import org.talky.platform.app.api.v1.response.CheckLoginIdResponse;
 import org.talky.platform.app.api.v1.response.LoginResponse;
 import org.talky.platform.app.api.v1.response.RegisterResponse;
 import org.talky.platform.app.service.AuthService;
+import org.talky.platform.app.vo.ClientInfo;
+import org.talky.platform.app.vo.LoginResult;
 import org.talky.platform.app.vo.User;
+import org.talky.platform.app.vo.UserAgentInfo;
 import org.talky.platform.support.response.ApiResponse;
 
 @RequestMapping("/api/v1")
@@ -26,9 +31,10 @@ public class AuthController {
 
     private final AuthService authService;
     private final ApiFraudChecker apiFraudChecker;
+    private final UserAgentParser userAgentParser;
 
     /**
-     * 로그인 아이디 중복 체크
+     * 로그인 아이디 중복 체크 (회원가입 할 때 사용)
      */
     @GetMapping("/auth/check-login-id")
     public ApiResponse<CheckLoginIdResponse> checkLoginId(
@@ -51,17 +57,26 @@ public class AuthController {
 
     @PostMapping("/auth/login")
     public ApiResponse<LoginResponse> login(
-            @RequestBody LoginRequest request
+            @RequestBody LoginRequest loginRequest,
+            HttpServletRequest httpRequest
     ) {
-        // TODO: 실제 로그인 로직은 차후 구현
-        LoginResponse response = new LoginResponse(
-                request.loginId(),
-                "홍길동",
-                "홍길동#1234",
-                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test"
-        );
+        UserAgentInfo userAgentInfo = userAgentParser.parse(httpRequest.getHeader("User-Agent"));
+        ClientInfo clientInfo = ClientInfo.builder()
+                .remoteIp(ClientIpResolver.getClientIp(httpRequest))
+                .uaRawValue(userAgentInfo.rawValue())
+                .uaOsName(userAgentInfo.osName())
+                .uaDeviceName(userAgentInfo.deviceName())
+                .uaAgentName(userAgentInfo.agentName())
+                .uaAgentVersion(userAgentInfo.agentVersion())
+                .uaDeviceClass(userAgentInfo.deviceClass())
+                .build();
 
-        return ApiResponse.success(response);
+        LoginResult result = authService.login(
+                loginRequest.loginId(),
+                loginRequest.password(),
+                clientInfo
+        );
+        return ApiResponse.success(LoginResponse.from(result));
     }
 
     @PostMapping("/auth/logout")
