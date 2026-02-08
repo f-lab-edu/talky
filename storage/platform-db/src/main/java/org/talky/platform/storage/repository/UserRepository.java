@@ -11,5 +11,6 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     boolean existsByUserTag(String userTag);
 
+    // TODO: deleted=false 조건 추가
     Optional<UserEntity> findByLoginId(String loginId);
 }

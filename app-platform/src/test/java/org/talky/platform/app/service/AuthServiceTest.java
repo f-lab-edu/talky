@@ -13,8 +13,10 @@ import org.talky.platform.app.vo.RegisterCommand;
 import org.talky.platform.storage.entity.UserEntity;
 import org.talky.platform.storage.repository.LoginSessionRepository;
 import org.talky.platform.storage.repository.UserRepository;
+import org.talky.platform.storage.entity.LoginSessionEntity;
 import org.talky.platform.support.error.CoreException;
 import org.talky.platform.support.error.ErrorCode;
+import org.talky.auth.InvalidTokenException;
 import org.talky.auth.UserRole;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -155,6 +157,38 @@ class AuthServiceTest {
                     .isInstanceOf(CoreException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.UNAUTHORIZED);
+        }
+    }
+
+    @Nested
+    @DisplayName("로그아웃")
+    class Logout {
+
+        private final ClientInfo clientInfo = ClientInfo.builder()
+                .remoteIp("127.0.0.1")
+                .build();
+
+        @Test
+        @DisplayName("정상 로그아웃 시 세션이 revoke 된다")
+        void success() {
+            // given
+            authService.register(new RegisterCommand("logouttest", "password123", "닉네임"));
+            LoginResult loginResult = authService.login("logouttest", "password123", clientInfo);
+
+            // when
+            authService.logout(loginResult.accessToken().tokenValue());
+
+            // then
+            LoginSessionEntity session = loginSessionRepository.findByAccessJti(loginResult.accessToken().jti())
+                    .orElseThrow();
+            assertThat(session.getRevokedAt()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("잘못된 토큰으로 로그아웃 시 예외 발생")
+        void invalidToken() {
+            assertThatThrownBy(() -> authService.logout("invalid.token.value"))
+                    .isInstanceOf(InvalidTokenException.class);
         }
     }
 }

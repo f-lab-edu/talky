@@ -5,6 +5,8 @@ import org.springframework.stereotype.Component;
 import org.talky.platform.app.vo.LoginSession;
 import org.talky.platform.storage.entity.LoginSessionEntity;
 import org.talky.platform.storage.repository.LoginSessionRepository;
+import org.talky.platform.support.error.CoreException;
+import org.talky.platform.support.error.ErrorCode;
 
 @Component
 @RequiredArgsConstructor
@@ -16,5 +18,11 @@ public class LoginSessionWriter {
         LoginSessionEntity entity = LoginSessionMapper.toEntity(loginSession);
         LoginSessionEntity saved = loginSessionRepository.save(entity);
         return LoginSessionMapper.toVo(saved);
+    }
+
+    public void revoke(String accessJti) {
+        LoginSessionEntity entity = loginSessionRepository.findByAccessJti(accessJti)
+                .orElseThrow(() -> new CoreException(ErrorCode.RESOURCE_NOT_FOUND));
+        entity.revoke();
     }
 }

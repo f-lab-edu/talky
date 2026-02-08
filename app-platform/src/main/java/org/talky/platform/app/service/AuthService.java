@@ -85,4 +85,10 @@ public class AuthService {
         loginSessionWriter.save(loginSession);
         return new LoginResult(user, accessToken, refreshToken);
     }
+
+    @Transactional
+    public void logout(String accessToken) {
+        AccessToken token = jwtTokenProvider.parseAccessToken(accessToken);
+        loginSessionWriter.revoke(token.jti());
+    }
 }

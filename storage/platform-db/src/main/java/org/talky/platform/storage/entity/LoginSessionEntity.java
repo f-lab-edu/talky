@@ -44,7 +44,8 @@ public class LoginSessionEntity {
     private LocalDateTime createdAt;
 
     @Builder
-    public LoginSessionEntity(Long id, Long userId, String accessJti, String refreshJti,
+    private LoginSessionEntity(Long id, Long userId, String accessJti, String refreshJti,
+                               LocalDateTime revokedAt,
                                String remoteIp, String uaRawValue,
                                String uaOsName, String uaDeviceName, String uaAgentName,
                                String uaAgentVersion, String uaDeviceClass,
@@ -53,6 +54,7 @@ public class LoginSessionEntity {
         this.userId = userId;
         this.accessJti = accessJti;
         this.refreshJti = refreshJti;
+        this.revokedAt = revokedAt;
         this.remoteIp = remoteIp;
         this.uaRawValue = uaRawValue;
         this.uaOsName = uaOsName;
@@ -62,5 +64,9 @@ public class LoginSessionEntity {
         this.uaDeviceClass = uaDeviceClass;
         this.expiresAt = expiresAt;
         this.createdAt = LocalDateTime.now();
+    }
+
+    public void revoke() {
+        this.revokedAt = LocalDateTime.now();
     }
 }
