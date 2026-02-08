@@ -278,8 +278,25 @@ class AuthControllerTest {
         @Test
         @DisplayName("유효한 토큰으로 로그아웃하면 성공한다")
         void success() {
+            RegisterRequest registerRequest = new RegisterRequest("logoutuser1", "mypassword123", "테스트");
             given()
-                .header("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test")
+                .contentType(ContentType.JSON)
+                .body(registerRequest)
+            .when()
+                .post("/api/v1/auth/register");
+
+            LoginRequest loginRequest = new LoginRequest("logoutuser1", "mypassword123");
+            String accessToken = given()
+                .contentType(ContentType.JSON)
+                .body(loginRequest)
+            .when()
+                .post("/api/v1/auth/login")
+            .then()
+                .extract()
+                .path("data.accessToken");
+
+            given()
+                .header("Authorization", "Bearer " + accessToken)
             .when()
                 .post("/api/v1/auth/logout")
             .then()

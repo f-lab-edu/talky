@@ -29,14 +29,15 @@ public class LoginSessionMapper {
                 .build();
     }
 
-    public static LoginSessionEntity toEntity(LoginSession vo) {
-        ClientInfo clientInfo = vo.clientInfo();
+    public static LoginSessionEntity toEntity(LoginSession loginSession) {
+        ClientInfo clientInfo = loginSession.clientInfo();
 
         return LoginSessionEntity.builder()
-                .id(vo.id())
-                .userId(vo.userId())
-                .accessJti(vo.accessJti())
-                .refreshJti(vo.refreshJti())
+                .id(loginSession.id())
+                .userId(loginSession.userId())
+                .accessJti(loginSession.accessJti())
+                .refreshJti(loginSession.refreshJti())
+                .revokedAt(loginSession.revokedAt())
                 .remoteIp(clientInfo.remoteIp())
                 .uaRawValue(clientInfo.uaRawValue())
                 .uaOsName(clientInfo.uaOsName())
@@ -44,7 +45,7 @@ public class LoginSessionMapper {
                 .uaAgentName(clientInfo.uaAgentName())
                 .uaAgentVersion(clientInfo.uaAgentVersion())
                 .uaDeviceClass(clientInfo.uaDeviceClass())
-                .expiresAt(vo.expiresAt())
+                .expiresAt(loginSession.expiresAt())
                 .build();
     }
 }

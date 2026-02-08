@@ -27,12 +27,12 @@ public class UserEntity {
     @Enumerated(EnumType.STRING)
     private UserRole role = UserRole.USER;
 
-    private String status = "ACTIVE";
+    private String status = "ACTIVE";//TODO: 수정필요
 
     private boolean deleted = false;
 
     @Builder
-    public UserEntity(Long id, String loginId, String password, String nickname,
+    private UserEntity(Long id, String loginId, String password, String nickname,
                       String userTag, UserRole role) {
         this.id = id;
         this.loginId = loginId;

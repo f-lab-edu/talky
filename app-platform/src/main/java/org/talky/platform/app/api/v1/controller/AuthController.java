@@ -83,7 +83,8 @@ public class AuthController {
     public ApiResponse<Void> logout(
             @RequestHeader("Authorization") String authorization
     ) {
-        // TODO: 실제 로그아웃 로직은 차후 구현
+        String token = authorization.substring("Bearer ".length());
+        authService.logout(token);
         return ApiResponse.success(null);
     }
 }

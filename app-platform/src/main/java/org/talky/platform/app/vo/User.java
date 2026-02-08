@@ -11,7 +11,7 @@ public record User(
         String nickname,
         String userTag,
         UserRole role,
-        String status,
+        String status, //TODO: 정리필요
         boolean deleted
 ) {
 }
