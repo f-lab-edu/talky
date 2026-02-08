@@ -2,6 +2,7 @@ package org.talky.platform.app.api.v1.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,6 +14,7 @@ import org.talky.platform.app.api.ApiFraudChecker;
 import org.talky.platform.app.api.ClientIpResolver;
 import org.talky.platform.app.api.UserAgentParser;
 import org.talky.platform.app.api.v1.request.LoginRequest;
+import org.talky.platform.app.api.v1.request.RefreshRequest;
 import org.talky.platform.app.api.v1.request.RegisterRequest;
 import org.talky.platform.app.api.v1.response.CheckLoginIdResponse;
 import org.talky.platform.app.api.v1.response.LoginResponse;
@@ -21,9 +23,11 @@ import org.talky.platform.app.service.AuthService;
 import org.talky.platform.app.vo.ClientInfo;
 import org.talky.platform.app.vo.LoginResult;
 import org.talky.platform.app.vo.User;
-import org.talky.platform.app.vo.UserAgentInfo;
+import org.talky.platform.support.error.CoreException;
+import org.talky.platform.support.error.ErrorCode;
 import org.talky.platform.support.response.ApiResponse;
 
+@Slf4j
 @RequestMapping("/api/v1")
 @RestController
 @RequiredArgsConstructor
@@ -60,23 +64,23 @@ public class AuthController {
             @RequestBody LoginRequest loginRequest,
             HttpServletRequest httpRequest
     ) {
-        UserAgentInfo userAgentInfo = userAgentParser.parse(httpRequest.getHeader("User-Agent"));
-        ClientInfo clientInfo = ClientInfo.builder()
-                .remoteIp(ClientIpResolver.getClientIp(httpRequest))
-                .uaRawValue(userAgentInfo.rawValue())
-                .uaOsName(userAgentInfo.osName())
-                .uaDeviceName(userAgentInfo.deviceName())
-                .uaAgentName(userAgentInfo.agentName())
-                .uaAgentVersion(userAgentInfo.agentVersion())
-                .uaDeviceClass(userAgentInfo.deviceClass())
-                .build();
-
-        LoginResult result = authService.login(
-                loginRequest.loginId(),
-                loginRequest.password(),
-                clientInfo
+        ClientInfo clientInfo = ClientInfo.of(
+                ClientIpResolver.getClientIp(httpRequest),
+                userAgentParser.parse(httpRequest.getHeader("User-Agent"))
         );
-        return ApiResponse.success(LoginResponse.from(result));
+
+        try {
+            LoginResult result = authService.login(
+                    loginRequest.loginId(),
+                    loginRequest.password(),
+                    clientInfo
+            );
+            return ApiResponse.success(LoginResponse.from(result));
+        } catch (Exception e) {
+            log.info("[로그인 실패] loginId={}, ip={}, message={}",
+                    loginRequest.loginId(), ClientIpResolver.getClientIp(httpRequest), e.getMessage());
+            throw new CoreException(ErrorCode.UNAUTHORIZED);
+        }
     }
 
     @PostMapping("/auth/logout")
@@ -86,5 +90,28 @@ public class AuthController {
         String token = authorization.substring("Bearer ".length());
         authService.logout(token);
         return ApiResponse.success(null);
+    }
+
+    @PostMapping("/auth/refresh")
+    public ApiResponse<LoginResponse> refresh(
+            @RequestBody RefreshRequest refreshRequest,
+            HttpServletRequest httpRequest
+    ) {
+        ClientInfo clientInfo = ClientInfo.of(
+                ClientIpResolver.getClientIp(httpRequest),
+                userAgentParser.parse(httpRequest.getHeader("User-Agent"))
+        );
+
+        try {
+            LoginResult result = authService.refresh(
+                    refreshRequest.accessToken(),
+                    refreshRequest.refreshToken(),
+                    clientInfo
+            );
+            return ApiResponse.success(LoginResponse.from(result));
+        } catch (Exception e) {
+            log.warn("[토큰 재발급 실패] ip={}, message={}", ClientIpResolver.getClientIp(httpRequest), e.getMessage());
+            throw new CoreException(ErrorCode.UNAUTHORIZED);
+        }
     }
 }

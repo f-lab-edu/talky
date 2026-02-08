@@ -8,6 +8,8 @@ import org.talky.platform.storage.repository.LoginSessionRepository;
 import org.talky.platform.support.error.CoreException;
 import org.talky.platform.support.error.ErrorCode;
 
+import java.time.LocalDateTime;
+
 @Component
 @RequiredArgsConstructor
 public class LoginSessionWriter {
@@ -24,5 +26,9 @@ public class LoginSessionWriter {
         LoginSessionEntity entity = loginSessionRepository.findByAccessJti(accessJti)
                 .orElseThrow(() -> new CoreException(ErrorCode.RESOURCE_NOT_FOUND));
         entity.revoke();
+    }
+
+    public void revokeAllByUserId(Long userId) {
+        loginSessionRepository.revokeAllByUserId(userId, LocalDateTime.now());
     }
 }

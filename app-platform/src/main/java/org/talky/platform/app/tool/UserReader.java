@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.talky.platform.app.vo.User;
 import org.talky.platform.storage.repository.UserRepository;
-
-import java.util.Optional;
+import org.talky.platform.support.error.CoreException;
+import org.talky.platform.support.error.ErrorCode;
 
 @Component
 @RequiredArgsConstructor
@@ -24,8 +24,15 @@ public class UserReader {
         return userRepository.existsById(id);
     }
 
-    public Optional<User> findByLoginId(String loginId) {
+    public User findByLoginId(String loginId) {
         return userRepository.findByLoginId(loginId)
-                .map(UserMapper::toVo);
+                .map(UserMapper::toVo)
+                .orElseThrow(() -> new CoreException(ErrorCode.RESOURCE_NOT_FOUND));
+    }
+
+    public User findById(Long id) {
+        return userRepository.findById(id)
+                .map(UserMapper::toVo)
+                .orElseThrow(() -> new CoreException(ErrorCode.RESOURCE_NOT_FOUND));
     }
 }

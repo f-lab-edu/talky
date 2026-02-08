@@ -1,6 +1,7 @@
 package org.talky.auth;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -26,7 +27,7 @@ public class JwtTokenProvider {
     private final long accessTokenExpiryMs;
     private final long refreshTokenExpiryMs;
 
-    JwtTokenProvider(String secretKey, long accessTokenExpiryMs, long refreshTokenExpiryMs) {
+    public JwtTokenProvider(String secretKey, long accessTokenExpiryMs, long refreshTokenExpiryMs) {
         this.secretKey = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
         this.accessTokenExpiryMs = accessTokenExpiryMs;
         this.refreshTokenExpiryMs = refreshTokenExpiryMs;
@@ -100,7 +101,7 @@ public class JwtTokenProvider {
         return new AccessToken(jti, userId, UserRole.valueOf(role), token);
     }
 
-    public Long parseRefreshToken(String token) {
+    public RefreshToken parseRefreshToken(String token) {
         Claims claims = parseClaims(token);
 
         String type = claims.get(CLAIM_TYPE, String.class);
@@ -108,7 +109,55 @@ public class JwtTokenProvider {
             throw new InvalidTokenException("Access token cannot be used as refresh token");
         }
 
-        return Long.valueOf(claims.getSubject());
+        String jti = claims.getId();
+        Long userId = Long.valueOf(claims.getSubject());
+        LocalDateTime expiresAt = claims.getExpiration().toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
+
+        return new RefreshToken(jti, userId, token, expiresAt);
+    }
+
+    /**
+     * 만료된 AccessToken을 parsing 한다.
+     * 만료되지 않은 AccessToken일 경우 InvalidTokenException 예외를 발생시킨다.
+     * @param token
+     * @return AccessToken
+     */
+    public AccessToken parseExpiredAccessToken(String token) {
+        Claims claims = parseClaimsAllowExpired(token);
+
+        if (claims.getExpiration().after(new Date())) {
+            throw new InvalidTokenException("Access token is not expired");
+        }
+
+        String type = claims.get(CLAIM_TYPE, String.class);
+        if (TYPE_REFRESH.equals(type)) {
+            throw new InvalidTokenException("Refresh token cannot be used as access token");
+        }
+
+        String role = claims.get(CLAIM_ROLE, String.class);
+        if (role == null) {
+            throw new InvalidTokenException("Missing role claim in access token");
+        }
+
+        String jti = claims.getId();
+        Long userId = Long.valueOf(claims.getSubject());
+        return new AccessToken(jti, userId, UserRole.valueOf(role), token);
+    }
+
+    private Claims parseClaimsAllowExpired(String token) {
+        try {
+            return Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (ExpiredJwtException e) {
+            return e.getClaims();
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new InvalidTokenException("Invalid token", e);
+        }
     }
 
     private Claims parseClaims(String token) {
