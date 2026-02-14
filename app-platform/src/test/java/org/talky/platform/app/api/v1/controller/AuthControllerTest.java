@@ -6,11 +6,28 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.talky.auth.AccessToken;
+import org.talky.auth.JwtTokenProvider;
+import org.talky.auth.RefreshToken;
+import org.talky.auth.UserRole;
+import org.talky.auth.UserStatus;
 import org.talky.platform.app.api.v1.request.LoginRequest;
+import org.talky.platform.app.api.v1.request.RefreshRequest;
 import org.talky.platform.app.api.v1.request.RegisterRequest;
+import org.talky.platform.app.api.UserAgentParser;
+import org.talky.platform.app.tool.LoginSessionWriter;
+import org.talky.platform.app.vo.ClientInfo;
+import org.talky.platform.app.vo.LoginSession;
+import org.talky.platform.app.vo.UserAgentInfo;
+import org.talky.platform.storage.entity.UserEntity;
+import org.talky.platform.storage.repository.UserRepository;
+import org.talky.platform.support.error.ErrorCode;
 import org.talky.platform.support.response.ResultType;
+
+import java.time.LocalDateTime;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
@@ -20,8 +37,22 @@ import static org.hamcrest.Matchers.nullValue;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class AuthControllerTest {
 
+    private static final String SECRET = "talky-local-dev-secret-key-that-is-at-least-32-bytes";
+    private static final long REFRESH_EXPIRY_MS = 1000L * 60 * 60 * 24 * 7;
+    private static final JwtTokenProvider SHORT_LIVED_PROVIDER = new JwtTokenProvider(SECRET, 0, REFRESH_EXPIRY_MS);
+    private static final JwtTokenProvider NORMAL_PROVIDER = new JwtTokenProvider(SECRET, 1000L * 60 * 30, REFRESH_EXPIRY_MS);
+
     @LocalServerPort
     private int port;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private LoginSessionWriter loginSessionWriter;
+
+    @Autowired
+    private UserAgentParser userAgentParser;
 
     @BeforeEach
     void setUp() {
@@ -234,6 +265,42 @@ class AuthControllerTest {
                 .body("error", nullValue());
         }
 
+        @Test
+        @DisplayName("정지된 계정으로 로그인하면 BANNED 에러가 발생한다")
+        void banned() {
+            RegisterRequest registerRequest = new RegisterRequest("bannedlogin1", "mypassword123", "테스트");
+            given()
+                .contentType(ContentType.JSON)
+                .body(registerRequest)
+            .when()
+                .post("/api/v1/auth/register");
+
+            UserEntity entity = userRepository.findByLoginId("bannedlogin1").orElseThrow();
+            userRepository.save(UserEntity.builder()
+                    .id(entity.getId())
+                    .loginId(entity.getLoginId())
+                    .password(entity.getPassword())
+                    .nickname(entity.getNickname())
+                    .userTag(entity.getUserTag())
+                    .role(entity.getRole())
+                    .status(UserStatus.BANNED)
+                    .build());
+
+            LoginRequest request = new LoginRequest("bannedlogin1", "mypassword123");
+
+            given()
+                .contentType(ContentType.JSON)
+                .body(request)
+            .when()
+                .post("/api/v1/auth/login")
+            .then()
+                .statusCode(403)
+                .body("result", equalTo(ResultType.ERROR.name()))
+                .body("data", nullValue())
+                .body("error.code", equalTo(ErrorCode.BANNED.name()))
+                .body("error.message", equalTo(ErrorCode.BANNED.getMessage()));
+        }
+
 //        @Test
 //        @DisplayName("존재하지 않는 사용자로 로그인하면 인증 에러가 발생한다")
 //        void userNotFound() {
@@ -304,6 +371,118 @@ class AuthControllerTest {
                 .body("result", equalTo(ResultType.SUCCESS.name()))
                 .body("data", nullValue())
                 .body("error", nullValue());
+        }
+    }
+
+    @Nested
+    @DisplayName("토큰 재발급")
+    class Refresh {
+
+        private static final String TEST_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0";
+
+        @Test
+        @DisplayName("만료된 access token과 유효한 refresh token으로 재발급하면 새 토큰을 반환한다")
+        void success() {
+            RegisterRequest registerRequest = new RegisterRequest("refreshuser1", "mypassword123", "테스트");
+            given()
+                .contentType(ContentType.JSON)
+                .body(registerRequest)
+            .when()
+                .post("/api/v1/auth/register");
+
+            Long userId = userRepository.findByLoginId("refreshuser1").orElseThrow().getId();
+
+            AccessToken expiredAccessToken = SHORT_LIVED_PROVIDER.createAccessToken(userId, UserRole.USER);
+            RefreshToken refreshToken = NORMAL_PROVIDER.createRefreshToken(userId);
+
+            // 요청에 보낼 User-Agent와 동일한 값으로 세션의 ClientInfo를 구성
+            UserAgentInfo uaInfo = userAgentParser.parse(TEST_USER_AGENT);
+            ClientInfo clientInfo = ClientInfo.of("127.0.0.1", uaInfo);
+
+            loginSessionWriter.save(LoginSession.builder()
+                    .id(System.nanoTime())
+                    .userId(userId)
+                    .accessJti(expiredAccessToken.jti())
+                    .refreshJti(refreshToken.jti())
+                    .clientInfo(clientInfo)
+                    .expiresAt(LocalDateTime.now().plusDays(7))
+                    .build());
+
+            RefreshRequest refreshRequest = new RefreshRequest(
+                    expiredAccessToken.tokenValue(),
+                    refreshToken.tokenValue()
+            );
+
+            given()
+                .contentType(ContentType.JSON)
+                .header("User-Agent", TEST_USER_AGENT)
+                .body(refreshRequest)
+            .when()
+                .post("/api/v1/auth/refresh")
+            .then()
+                .statusCode(200)
+                .body("result", equalTo(ResultType.SUCCESS.name()))
+                .body("data.accessToken", notNullValue())
+                .body("data.refreshToken", notNullValue())
+                .body("error", nullValue());
+        }
+
+        @Test
+        @DisplayName("정지된 계정으로 토큰 재발급하면 BANNED 에러가 발생한다")
+        void banned() {
+            RegisterRequest registerRequest = new RegisterRequest("bannedrefresh1", "mypassword123", "테스트");
+            given()
+                .contentType(ContentType.JSON)
+                .body(registerRequest)
+            .when()
+                .post("/api/v1/auth/register");
+
+            Long userId = userRepository.findByLoginId("bannedrefresh1").orElseThrow().getId();
+
+            AccessToken expiredAccessToken = SHORT_LIVED_PROVIDER.createAccessToken(userId, UserRole.USER);
+            RefreshToken refreshToken = NORMAL_PROVIDER.createRefreshToken(userId);
+
+            UserAgentInfo uaInfo = userAgentParser.parse(TEST_USER_AGENT);
+            ClientInfo clientInfo = ClientInfo.of("127.0.0.1", uaInfo);
+
+            loginSessionWriter.save(LoginSession.builder()
+                    .id(System.nanoTime())
+                    .userId(userId)
+                    .accessJti(expiredAccessToken.jti())
+                    .refreshJti(refreshToken.jti())
+                    .clientInfo(clientInfo)
+                    .expiresAt(LocalDateTime.now().plusDays(7))
+                    .build());
+
+            // 밴 처리
+            UserEntity entity = userRepository.findByLoginId("bannedrefresh1").orElseThrow();
+            userRepository.save(UserEntity.builder()
+                    .id(entity.getId())
+                    .loginId(entity.getLoginId())
+                    .password(entity.getPassword())
+                    .nickname(entity.getNickname())
+                    .userTag(entity.getUserTag())
+                    .role(entity.getRole())
+                    .status(UserStatus.BANNED)
+                    .build());
+
+            RefreshRequest refreshRequest = new RefreshRequest(
+                    expiredAccessToken.tokenValue(),
+                    refreshToken.tokenValue()
+            );
+
+            given()
+                .contentType(ContentType.JSON)
+                .header("User-Agent", TEST_USER_AGENT)
+                .body(refreshRequest)
+            .when()
+                .post("/api/v1/auth/refresh")
+            .then()
+                .statusCode(403)
+                .body("result", equalTo(ResultType.ERROR.name()))
+                .body("data", nullValue())
+                .body("error.code", equalTo(ErrorCode.BANNED.name()))
+                .body("error.message", equalTo(ErrorCode.BANNED.getMessage()));
         }
     }
 }

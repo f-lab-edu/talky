@@ -1,6 +1,6 @@
 package org.talky.platform.app.api.v1.response;
 
-import org.talky.platform.app.vo.LoginResult;
+import org.talky.platform.app.vo.TokenIssueResult;
 import org.talky.platform.app.vo.User;
 
 public record LoginResponse(
@@ -10,7 +10,7 @@ public record LoginResponse(
         String accessToken,
         String refreshToken
 ) {
-    public static LoginResponse from(LoginResult result) {
+    public static LoginResponse from(TokenIssueResult result) {
         User user = result.user();
         return new LoginResponse(
                 user.loginId(),

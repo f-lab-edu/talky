@@ -5,7 +5,7 @@ import lombok.Builder;
 
 import java.time.LocalDateTime;
 
-@Builder
+@Builder(toBuilder = true)
 public record LoginSession(
         Long id,
         Long userId,
@@ -16,4 +16,22 @@ public record LoginSession(
         LocalDateTime expiresAt,
         @Nullable LocalDateTime createdAt
 ) {
+    public static LoginSession of(Long id, TokenIssueResult result, ClientInfo clientInfo) {
+        return LoginSession.builder()
+                .id(id)
+                .userId(result.user().id())
+                .accessJti(result.accessToken().jti())
+                .refreshJti(result.refreshToken().jti())
+                .clientInfo(clientInfo)
+                .expiresAt(result.refreshToken().expiresAt())
+                .build();
+    }
+
+    public LoginSession revoke() {
+        return toBuilder().revokedAt(LocalDateTime.now()).build();
+    }
+
+    public boolean isRevoked() {
+        return revokedAt != null;
+    }
 }

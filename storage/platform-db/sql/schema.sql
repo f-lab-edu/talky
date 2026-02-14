@@ -5,8 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
     nickname   VARCHAR(10)  NOT NULL,
     user_tag   VARCHAR(30)  NOT NULL UNIQUE,
     role       VARCHAR(10)  NOT NULL DEFAULT 'USER',
-    status     VARCHAR(20)  NOT NULL DEFAULT 'ACTIVE',
-    deleted    BOOLEAN      NOT NULL DEFAULT FALSE
+    status     VARCHAR(20)  NOT NULL DEFAULT 'ACTIVE'
 );
 
 CREATE TABLE IF NOT EXISTS login_sessions (
