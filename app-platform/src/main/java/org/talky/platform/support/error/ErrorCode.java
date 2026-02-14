@@ -16,6 +16,8 @@ public enum ErrorCode {
 
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증에 실패했습니다", LogLevel.INFO),
 
+    BANNED(HttpStatus.FORBIDDEN, "정지된 계정입니다", LogLevel.INFO),
+
     // TODO: 토큰 관련 에러코드 분리
     //  - EXPIRED_TOKEN: access token 만료 → 클라이언트가 refresh 시도
     //  - INVALID_TOKEN: 위변조/잘못된 형식 → 클라이언트가 재로그인

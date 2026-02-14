@@ -13,6 +13,7 @@ import org.talky.auth.AccessToken;
 import org.talky.auth.JwtTokenProvider;
 import org.talky.auth.RefreshToken;
 import org.talky.auth.UserRole;
+import org.talky.auth.UserStatus;
 import org.talky.platform.app.api.v1.request.LoginRequest;
 import org.talky.platform.app.api.v1.request.RefreshRequest;
 import org.talky.platform.app.api.v1.request.RegisterRequest;
@@ -21,7 +22,9 @@ import org.talky.platform.app.tool.LoginSessionWriter;
 import org.talky.platform.app.vo.ClientInfo;
 import org.talky.platform.app.vo.LoginSession;
 import org.talky.platform.app.vo.UserAgentInfo;
+import org.talky.platform.storage.entity.UserEntity;
 import org.talky.platform.storage.repository.UserRepository;
+import org.talky.platform.support.error.ErrorCode;
 import org.talky.platform.support.response.ResultType;
 
 import java.time.LocalDateTime;
@@ -262,6 +265,42 @@ class AuthControllerTest {
                 .body("error", nullValue());
         }
 
+        @Test
+        @DisplayName("정지된 계정으로 로그인하면 BANNED 에러가 발생한다")
+        void banned() {
+            RegisterRequest registerRequest = new RegisterRequest("bannedlogin1", "mypassword123", "테스트");
+            given()
+                .contentType(ContentType.JSON)
+                .body(registerRequest)
+            .when()
+                .post("/api/v1/auth/register");
+
+            UserEntity entity = userRepository.findByLoginId("bannedlogin1").orElseThrow();
+            userRepository.save(UserEntity.builder()
+                    .id(entity.getId())
+                    .loginId(entity.getLoginId())
+                    .password(entity.getPassword())
+                    .nickname(entity.getNickname())
+                    .userTag(entity.getUserTag())
+                    .role(entity.getRole())
+                    .status(UserStatus.BANNED)
+                    .build());
+
+            LoginRequest request = new LoginRequest("bannedlogin1", "mypassword123");
+
+            given()
+                .contentType(ContentType.JSON)
+                .body(request)
+            .when()
+                .post("/api/v1/auth/login")
+            .then()
+                .statusCode(403)
+                .body("result", equalTo(ResultType.ERROR.name()))
+                .body("data", nullValue())
+                .body("error.code", equalTo(ErrorCode.BANNED.name()))
+                .body("error.message", equalTo(ErrorCode.BANNED.getMessage()));
+        }
+
 //        @Test
 //        @DisplayName("존재하지 않는 사용자로 로그인하면 인증 에러가 발생한다")
 //        void userNotFound() {
@@ -383,12 +422,67 @@ class AuthControllerTest {
             .then()
                 .statusCode(200)
                 .body("result", equalTo(ResultType.SUCCESS.name()))
-                .body("data.loginId", equalTo("refreshuser1"))
-                .body("data.nickname", notNullValue())
-                .body("data.userTag", notNullValue())
                 .body("data.accessToken", notNullValue())
                 .body("data.refreshToken", notNullValue())
                 .body("error", nullValue());
+        }
+
+        @Test
+        @DisplayName("정지된 계정으로 토큰 재발급하면 BANNED 에러가 발생한다")
+        void banned() {
+            RegisterRequest registerRequest = new RegisterRequest("bannedrefresh1", "mypassword123", "테스트");
+            given()
+                .contentType(ContentType.JSON)
+                .body(registerRequest)
+            .when()
+                .post("/api/v1/auth/register");
+
+            Long userId = userRepository.findByLoginId("bannedrefresh1").orElseThrow().getId();
+
+            AccessToken expiredAccessToken = SHORT_LIVED_PROVIDER.createAccessToken(userId, UserRole.USER);
+            RefreshToken refreshToken = NORMAL_PROVIDER.createRefreshToken(userId);
+
+            UserAgentInfo uaInfo = userAgentParser.parse(TEST_USER_AGENT);
+            ClientInfo clientInfo = ClientInfo.of("127.0.0.1", uaInfo);
+
+            loginSessionWriter.save(LoginSession.builder()
+                    .id(System.nanoTime())
+                    .userId(userId)
+                    .accessJti(expiredAccessToken.jti())
+                    .refreshJti(refreshToken.jti())
+                    .clientInfo(clientInfo)
+                    .expiresAt(LocalDateTime.now().plusDays(7))
+                    .build());
+
+            // 밴 처리
+            UserEntity entity = userRepository.findByLoginId("bannedrefresh1").orElseThrow();
+            userRepository.save(UserEntity.builder()
+                    .id(entity.getId())
+                    .loginId(entity.getLoginId())
+                    .password(entity.getPassword())
+                    .nickname(entity.getNickname())
+                    .userTag(entity.getUserTag())
+                    .role(entity.getRole())
+                    .status(UserStatus.BANNED)
+                    .build());
+
+            RefreshRequest refreshRequest = new RefreshRequest(
+                    expiredAccessToken.tokenValue(),
+                    refreshToken.tokenValue()
+            );
+
+            given()
+                .contentType(ContentType.JSON)
+                .header("User-Agent", TEST_USER_AGENT)
+                .body(refreshRequest)
+            .when()
+                .post("/api/v1/auth/refresh")
+            .then()
+                .statusCode(403)
+                .body("result", equalTo(ResultType.ERROR.name()))
+                .body("data", nullValue())
+                .body("error.code", equalTo(ErrorCode.BANNED.name()))
+                .body("error.message", equalTo(ErrorCode.BANNED.getMessage()));
         }
     }
 }

@@ -14,7 +14,6 @@ public class UserMapper {
                 .userTag(entity.getUserTag())
                 .role(entity.getRole())
                 .status(entity.getStatus())
-                .deleted(entity.isDeleted())
                 .build();
     }
 
@@ -26,6 +25,7 @@ public class UserMapper {
                 .nickname(domain.nickname())
                 .userTag(domain.userTag())
                 .role(domain.role())
+                .status(domain.status())
                 .build();
     }
 }

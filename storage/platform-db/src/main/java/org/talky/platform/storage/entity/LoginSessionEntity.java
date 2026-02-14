@@ -66,7 +66,19 @@ public class LoginSessionEntity {
         this.createdAt = LocalDateTime.now();
     }
 
-    public void revoke() {
-        this.revokedAt = LocalDateTime.now();
+    public void update(LoginSessionEntity toUpdate) {
+        this.userId = toUpdate.getUserId();
+        this.accessJti = toUpdate.getAccessJti();
+        this.refreshJti = toUpdate.getRefreshJti();
+        this.revokedAt = toUpdate.getRevokedAt();
+        this.remoteIp = toUpdate.getRemoteIp();
+        this.uaRawValue = toUpdate.getUaRawValue();
+        this.uaOsName = toUpdate.getUaOsName();
+        this.uaDeviceName = toUpdate.getUaDeviceName();
+        this.uaAgentName = toUpdate.getUaAgentName();
+        this.uaAgentVersion = toUpdate.getUaAgentVersion();
+        this.uaDeviceClass = toUpdate.getUaDeviceClass();
+        this.expiresAt = toUpdate.getExpiresAt();
     }
+
 }

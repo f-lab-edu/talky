@@ -18,4 +18,11 @@ public class LoginSessionReader {
                 .map(LoginSessionMapper::toVo)
                 .orElseThrow(() -> new CoreException(ErrorCode.RESOURCE_NOT_FOUND));
     }
+
+    public LoginSession getByAccessJti(String accessJti) {
+        return loginSessionRepository.findByAccessJti(accessJti)
+                .map(LoginSessionMapper::toVo)
+                .orElseThrow(() -> new CoreException(ErrorCode.RESOURCE_NOT_FOUND));
+    }
+
 }

@@ -2,12 +2,10 @@ package org.talky.platform.app.vo;
 
 import jakarta.annotation.Nullable;
 import lombok.Builder;
-import org.talky.auth.AccessToken;
-import org.talky.auth.RefreshToken;
 
 import java.time.LocalDateTime;
 
-@Builder
+@Builder(toBuilder = true)
 public record LoginSession(
         Long id,
         Long userId,
@@ -18,15 +16,19 @@ public record LoginSession(
         LocalDateTime expiresAt,
         @Nullable LocalDateTime createdAt
 ) {
-    public static LoginSession of(Long id, Long userId, AccessToken accessToken, RefreshToken refreshToken, ClientInfo clientInfo) {
+    public static LoginSession of(Long id, TokenIssueResult result, ClientInfo clientInfo) {
         return LoginSession.builder()
                 .id(id)
-                .userId(userId)
-                .accessJti(accessToken.jti())
-                .refreshJti(refreshToken.jti())
+                .userId(result.user().id())
+                .accessJti(result.accessToken().jti())
+                .refreshJti(result.refreshToken().jti())
                 .clientInfo(clientInfo)
-                .expiresAt(refreshToken.expiresAt())
+                .expiresAt(result.refreshToken().expiresAt())
                 .build();
+    }
+
+    public LoginSession revoke() {
+        return toBuilder().revokedAt(LocalDateTime.now()).build();
     }
 
     public boolean isRevoked() {

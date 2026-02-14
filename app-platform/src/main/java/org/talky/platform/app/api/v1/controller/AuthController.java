@@ -18,13 +18,16 @@ import org.talky.platform.app.api.v1.request.RefreshRequest;
 import org.talky.platform.app.api.v1.request.RegisterRequest;
 import org.talky.platform.app.api.v1.response.CheckLoginIdResponse;
 import org.talky.platform.app.api.v1.response.LoginResponse;
+import org.talky.platform.app.api.v1.response.RefreshResponse;
 import org.talky.platform.app.api.v1.response.RegisterResponse;
 import org.talky.platform.app.service.AuthService;
+import org.talky.platform.app.service.RegisterService;
 import org.talky.platform.app.vo.ClientInfo;
-import org.talky.platform.app.vo.LoginResult;
+import org.talky.platform.app.vo.TokenIssueResult;
 import org.talky.platform.app.vo.User;
 import org.talky.platform.support.error.CoreException;
 import org.talky.platform.support.error.ErrorCode;
+import org.springframework.http.HttpHeaders;
 import org.talky.platform.support.response.ApiResponse;
 
 @Slf4j
@@ -34,6 +37,7 @@ import org.talky.platform.support.response.ApiResponse;
 public class AuthController {
 
     private final AuthService authService;
+    private final RegisterService registerService;
     private final ApiFraudChecker apiFraudChecker;
     private final UserAgentParser userAgentParser;
 
@@ -47,7 +51,7 @@ public class AuthController {
     ) {
         apiFraudChecker.checkLoginId(request);
 
-        boolean exists = authService.checkLoginId(loginId);
+        boolean exists = registerService.checkLoginId(loginId);
         return ApiResponse.success(new CheckLoginIdResponse(exists));
     }
 
@@ -55,7 +59,7 @@ public class AuthController {
     public ApiResponse<RegisterResponse> register(
             @RequestBody RegisterRequest request
     ) {
-        User user = authService.register(request.toCommand());
+        User user = registerService.register(request.toCommand());
         return ApiResponse.success(RegisterResponse.from(user));
     }
 
@@ -66,17 +70,20 @@ public class AuthController {
     ) {
         ClientInfo clientInfo = ClientInfo.of(
                 ClientIpResolver.getClientIp(httpRequest),
-                userAgentParser.parse(httpRequest.getHeader("User-Agent"))
+                userAgentParser.parse(httpRequest.getHeader(HttpHeaders.USER_AGENT))
         );
 
         try {
-            LoginResult result = authService.login(
+            TokenIssueResult result = authService.login(
                     loginRequest.loginId(),
                     loginRequest.password(),
                     clientInfo
             );
             return ApiResponse.success(LoginResponse.from(result));
         } catch (Exception e) {
+            if (e instanceof CoreException ce && ce.getErrorCode() == ErrorCode.BANNED) {
+                throw ce;
+            }
             log.info("[로그인 실패] loginId={}, ip={}, message={}",
                     loginRequest.loginId(), ClientIpResolver.getClientIp(httpRequest), e.getMessage());
             throw new CoreException(ErrorCode.UNAUTHORIZED);
@@ -93,23 +100,26 @@ public class AuthController {
     }
 
     @PostMapping("/auth/refresh")
-    public ApiResponse<LoginResponse> refresh(
+    public ApiResponse<RefreshResponse> refresh(
             @RequestBody RefreshRequest refreshRequest,
             HttpServletRequest httpRequest
     ) {
         ClientInfo clientInfo = ClientInfo.of(
                 ClientIpResolver.getClientIp(httpRequest),
-                userAgentParser.parse(httpRequest.getHeader("User-Agent"))
+                userAgentParser.parse(httpRequest.getHeader(HttpHeaders.USER_AGENT))
         );
 
         try {
-            LoginResult result = authService.refresh(
+            TokenIssueResult result = authService.refresh(
                     refreshRequest.accessToken(),
                     refreshRequest.refreshToken(),
                     clientInfo
             );
-            return ApiResponse.success(LoginResponse.from(result));
+            return ApiResponse.success(RefreshResponse.from(result));
         } catch (Exception e) {
+            if (e instanceof CoreException ce && ce.getErrorCode() == ErrorCode.BANNED) {
+                throw ce;
+            }
             log.warn("[토큰 재발급 실패] ip={}, message={}", ClientIpResolver.getClientIp(httpRequest), e.getMessage());
             throw new CoreException(ErrorCode.UNAUTHORIZED);
         }

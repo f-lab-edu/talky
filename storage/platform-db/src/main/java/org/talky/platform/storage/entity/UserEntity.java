@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.talky.auth.UserRole;
+import org.talky.auth.UserStatus;
 
 @Entity
 @Table(name = "users")
@@ -27,18 +28,27 @@ public class UserEntity {
     @Enumerated(EnumType.STRING)
     private UserRole role = UserRole.USER;
 
-    private String status = "ACTIVE";//TODO: 수정필요
-
-    private boolean deleted = false;
+    @Enumerated(EnumType.STRING)
+    private UserStatus status = UserStatus.ACTIVE;
 
     @Builder
     private UserEntity(Long id, String loginId, String password, String nickname,
-                      String userTag, UserRole role) {
+                      String userTag, UserRole role, UserStatus status) {
         this.id = id;
         this.loginId = loginId;
         this.password = password;
         this.nickname = nickname;
         this.userTag = userTag;
         this.role = role;
+        this.status = status;
+    }
+
+    public void update(UserEntity toUpdate) {
+        this.loginId = toUpdate.getLoginId();
+        this.password = toUpdate.getPassword();
+        this.nickname = toUpdate.getNickname();
+        this.userTag = toUpdate.getUserTag();
+        this.role = toUpdate.getRole();
+        this.status = toUpdate.getStatus();
     }
 }

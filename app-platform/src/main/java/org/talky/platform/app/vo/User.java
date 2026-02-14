@@ -2,6 +2,7 @@ package org.talky.platform.app.vo;
 
 import lombok.Builder;
 import org.talky.auth.UserRole;
+import org.talky.auth.UserStatus;
 
 @Builder
 public record User(
@@ -11,7 +12,6 @@ public record User(
         String nickname,
         String userTag,
         UserRole role,
-        String status, //TODO: 정리필요
-        boolean deleted
+        UserStatus status
 ) {
 }

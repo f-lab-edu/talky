@@ -22,10 +22,11 @@ public class LoginSessionWriter {
         return LoginSessionMapper.toVo(saved);
     }
 
-    public void revoke(String accessJti) {
-        LoginSessionEntity entity = loginSessionRepository.findByAccessJti(accessJti)
+    public void update(LoginSession loginSession) {
+        LoginSessionEntity entity = loginSessionRepository.findById(loginSession.id())
                 .orElseThrow(() -> new CoreException(ErrorCode.RESOURCE_NOT_FOUND));
-        entity.revoke();
+        LoginSessionEntity toUpdate = LoginSessionMapper.toEntity(loginSession);
+        entity.update(toUpdate);
     }
 
     public void revokeAllByUserId(Long userId) {
