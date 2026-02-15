@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.talky.auth.AuthUserId;
 import org.talky.platform.app.api.ApiFraudChecker;
 import org.talky.platform.app.api.ClientIpResolver;
 import org.talky.platform.app.api.UserAgentParser;
@@ -92,6 +93,7 @@ public class AuthController {
 
     @PostMapping("/auth/logout")
     public ApiResponse<Void> logout(
+            @AuthUserId Long userId,
             @RequestHeader("Authorization") String authorization
     ) {
         String token = authorization.substring("Bearer ".length());

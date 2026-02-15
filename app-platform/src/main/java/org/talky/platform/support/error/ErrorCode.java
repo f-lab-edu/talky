@@ -16,12 +16,13 @@ public enum ErrorCode {
 
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증에 실패했습니다", LogLevel.INFO),
 
-    BANNED(HttpStatus.FORBIDDEN, "정지된 계정입니다", LogLevel.INFO),
+    EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다", LogLevel.INFO),
 
-    // TODO: 토큰 관련 에러코드 분리
-    //  - EXPIRED_TOKEN: access token 만료 → 클라이언트가 refresh 시도
-    //  - INVALID_TOKEN: 위변조/잘못된 형식 → 클라이언트가 재로그인
-    //  - refresh 실패는 UNAUTHORIZED 유지 (어차피 재로그인이 답)
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다", LogLevel.INFO),
+
+    FORBIDDEN(HttpStatus.FORBIDDEN, "접근 권한이 없습니다", LogLevel.INFO),
+
+    BANNED(HttpStatus.FORBIDDEN, "정지된 계정입니다", LogLevel.INFO),
 
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "요청한 리소스를 찾을 수 없습니다", LogLevel.ERROR);
 

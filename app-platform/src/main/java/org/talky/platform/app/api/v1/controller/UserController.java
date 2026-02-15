@@ -1,6 +1,7 @@
 package org.talky.platform.app.api.v1.controller;
 
 import org.springframework.web.bind.annotation.*;
+import org.talky.auth.AuthUserId;
 import org.talky.platform.app.api.v1.response.MyInfoResponse;
 import org.talky.platform.app.api.v1.response.UserProfileResponse;
 import org.talky.platform.support.response.ApiResponse;
@@ -11,7 +12,7 @@ public class UserController {
 
     @GetMapping("/@me")
     public ApiResponse<MyInfoResponse> getMe(
-            @RequestHeader("Authorization") String authorization
+            @AuthUserId Long userId
     ) {
         // TODO: 실제 내 정보 조회 로직은 차후 구현
         MyInfoResponse response = new MyInfoResponse(
@@ -25,7 +26,7 @@ public class UserController {
 
     @GetMapping("/{userTag}")
     public ApiResponse<UserProfileResponse> getUserProfile(
-            @RequestHeader("Authorization") String authorization,
+            @AuthUserId Long userId,
             @PathVariable String userTag
     ) {
         // TODO: 실제 프로필 조회 로직은 차후 구현

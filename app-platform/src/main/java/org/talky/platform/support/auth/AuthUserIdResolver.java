@@ -1,0 +1,41 @@
+package org.talky.platform.support.auth;
+
+import org.springframework.core.MethodParameter;
+import org.springframework.stereotype.Component;
+import org.springframework.web.bind.support.WebDataBinderFactory;
+import org.springframework.web.context.request.NativeWebRequest;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.web.method.support.ModelAndViewContainer;
+import org.talky.auth.AuthUserId;
+import org.talky.platform.support.error.CoreException;
+import org.talky.platform.support.error.ErrorCode;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+@Component
+public class AuthUserIdResolver implements HandlerMethodArgumentResolver {
+
+
+    @Override
+    public boolean supportsParameter(MethodParameter parameter) {
+        return parameter.hasParameterAnnotation(AuthUserId.class)
+                && parameter.getParameterType().equals(Long.class);
+    }
+
+    @Override
+    public Object resolveArgument(
+            MethodParameter parameter,
+            ModelAndViewContainer mavContainer,
+            NativeWebRequest webRequest,
+            WebDataBinderFactory binderFactory
+    ) {
+        HttpServletRequest request = (HttpServletRequest) webRequest.getNativeRequest();
+        Object userId = request.getAttribute(AuthAttributes.USER_ID);
+
+        if (userId == null) {
+            throw new CoreException(ErrorCode.UNAUTHORIZED);
+        }
+
+        return userId;
+    }
+}
