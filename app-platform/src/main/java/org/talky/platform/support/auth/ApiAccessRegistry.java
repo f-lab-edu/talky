@@ -34,7 +34,7 @@ public class ApiAccessRegistry {
     private static final List<ProtectedRoute> PROTECTED_ROUTES = List.of(
             ProtectedRoute.of(HttpMethod.POST, "/api/v1/auth/logout", UserRole.USER, UserRole.ADMIN),
             ProtectedRoute.of(HttpMethod.GET, "/api/v1/users/@me", UserRole.USER, UserRole.ADMIN),
-            ProtectedRoute.of(HttpMethod.GET, "/api/v1/users/*", UserRole.USER, UserRole.ADMIN)
+            ProtectedRoute.of(HttpMethod.GET, "/api/v1/users/*/profile", UserRole.USER, UserRole.ADMIN)
     );
 
     public static boolean isPublic(String method, String requestUri) {

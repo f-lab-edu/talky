@@ -5,11 +5,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.talky.auth.UserRole;
+import org.talky.platform.app.tool.ProfileWriter;
 import org.talky.platform.app.tool.RegisterValidator;
 import org.talky.platform.app.tool.UserIdGenerator;
 import org.talky.platform.app.tool.UserReader;
 import org.talky.platform.app.tool.UserTagGenerator;
 import org.talky.platform.app.tool.UserWriter;
+import org.talky.platform.app.vo.Profile;
 import org.talky.platform.app.vo.RegisterCommand;
 import org.talky.platform.app.vo.User;
 
@@ -19,6 +21,7 @@ public class RegisterService {
 
     private final UserReader userReader;
     private final UserWriter userWriter;
+    private final ProfileWriter profileWriter;
     private final UserTagGenerator userTagGenerator;
     private final RegisterValidator registerValidator;
     private final PasswordEncoder passwordEncoder;
@@ -44,6 +47,11 @@ public class RegisterService {
                 .build();
 
         registerValidator.validate(user);
-        return userWriter.save(user);
+        User savedUser = userWriter.save(user);
+
+        Profile profile = new Profile(userIdGenerator.generate(), savedUser.id(), "");
+        profileWriter.save(profile);
+
+        return savedUser;
     }
 }

@@ -20,6 +20,8 @@ import org.talky.platform.support.error.ErrorCode;
 import org.talky.platform.support.response.ApiResponse;
 
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
 @Slf4j
@@ -37,7 +39,8 @@ public class AuthorizationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
-        String requestUri = request.getRequestURI();
+        // getRequestURI()는 URL 인코딩된 상태를 반환하므로 (@→%40) 디코딩하여 ApiAccessRegistry와 매칭
+        String requestUri = URLDecoder.decode(request.getRequestURI(), StandardCharsets.UTF_8);
         String method = request.getMethod();
 
         if (ApiAccessRegistry.isPublic(method, requestUri)) {
