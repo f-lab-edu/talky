@@ -167,8 +167,10 @@ public class JwtTokenProvider {
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
+        } catch (ExpiredJwtException e) {
+            throw new ExpiredTokenException("Token has expired", e);
         } catch (JwtException | IllegalArgumentException e) {
-            throw new InvalidTokenException("Invalid or expired token", e);
+            throw new InvalidTokenException("Invalid token", e);
         }
     }
 }
