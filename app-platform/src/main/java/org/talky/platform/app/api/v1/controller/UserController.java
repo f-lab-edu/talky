@@ -1,41 +1,35 @@
 package org.talky.platform.app.api.v1.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.talky.auth.AuthUserId;
 import org.talky.platform.app.api.v1.response.MyInfoResponse;
 import org.talky.platform.app.api.v1.response.UserProfileResponse;
+import org.talky.platform.app.service.UserService;
+import org.talky.platform.app.vo.User;
+import org.talky.platform.app.vo.UserProfile;
 import org.talky.platform.support.response.ApiResponse;
 
 @RestController
 @RequestMapping("/api/v1/users")
+@RequiredArgsConstructor
 public class UserController {
+
+    private final UserService userService;
 
     @GetMapping("/@me")
     public ApiResponse<MyInfoResponse> getMe(
             @AuthUserId Long userId
     ) {
-        // TODO: 실제 내 정보 조회 로직은 차후 구현
-        MyInfoResponse response = new MyInfoResponse(
-                "user1234",
-                "홍길동",
-                "홍길동#1234"
-        );
-
-        return ApiResponse.success(response);
+        User user = userService.getMe(userId);
+        return ApiResponse.success(MyInfoResponse.from(user));
     }
 
-    @GetMapping("/{userTag}")
+    @GetMapping("/{userTag}/profile")
     public ApiResponse<UserProfileResponse> getUserProfile(
-            @AuthUserId Long userId,
             @PathVariable String userTag
     ) {
-        // TODO: 실제 프로필 조회 로직은 차후 구현
-        UserProfileResponse response = new UserProfileResponse(
-                "김철수",
-                userTag,
-                "코딩 중..."
-        );
-
-        return ApiResponse.success(response);
+        UserProfile userProfile = userService.getUserProfile(userTag);
+        return ApiResponse.success(UserProfileResponse.from(userProfile));
     }
 }

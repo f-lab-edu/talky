@@ -8,6 +8,14 @@ CREATE TABLE IF NOT EXISTS users (
     status     VARCHAR(20)  NOT NULL DEFAULT 'ACTIVE'
 );
 
+CREATE TABLE IF NOT EXISTS profiles (
+    id               BIGINT        PRIMARY KEY,
+    user_id          BIGINT        NOT NULL UNIQUE,
+    profile_message  VARCHAR(100)  NOT NULL DEFAULT '',
+
+    INDEX idx_user_id (user_id)
+);
+
 CREATE TABLE IF NOT EXISTS login_sessions (
     id               BIGINT       PRIMARY KEY,
     user_id          BIGINT       NOT NULL,

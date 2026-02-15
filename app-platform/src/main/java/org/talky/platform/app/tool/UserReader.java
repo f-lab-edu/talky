@@ -35,4 +35,10 @@ public class UserReader {
                 .map(UserMapper::toVo)
                 .orElseThrow(() -> new CoreException(ErrorCode.RESOURCE_NOT_FOUND));
     }
+
+    public User findByUserTag(String userTag) {
+        return userRepository.findByUserTag(userTag)
+                .map(UserMapper::toVo)
+                .orElseThrow(() -> new CoreException(ErrorCode.RESOURCE_NOT_FOUND));
+    }
 }
