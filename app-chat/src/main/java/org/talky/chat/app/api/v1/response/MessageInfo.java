@@ -4,7 +4,7 @@ import java.time.Instant;
 
 public record MessageInfo(
         String messageId,
-        String channelId,
+        String chatId,
         String senderTag,
         String senderNickname,
         String content,

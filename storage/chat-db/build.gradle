@@ -1,4 +1,13 @@
 plugins {
     id 'talky.base-conventions'
     id 'talky.java-conventions'
+    id 'talky.spring-boot-conventions'
+    id 'java-library'  // api 키워드 사용을 위해 필요
+}
+
+bootJar { enabled = false }
+jar { enabled = true }
+
+dependencies {
+    api 'org.springframework.boot:spring-boot-starter-data-mongodb-reactive'
 }

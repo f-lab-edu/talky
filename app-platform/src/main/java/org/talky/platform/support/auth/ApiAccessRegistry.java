@@ -28,7 +28,8 @@ public class ApiAccessRegistry {
             Route.of(HttpMethod.GET, "/api/v1/auth/check-login-id"),
             Route.of(HttpMethod.POST, "/api/v1/auth/register"),
             Route.of(HttpMethod.POST, "/api/v1/auth/login"),
-            Route.of(HttpMethod.POST, "/api/v1/auth/refresh")
+            Route.of(HttpMethod.POST, "/api/v1/auth/refresh"),
+            Route.of(HttpMethod.POST, "/api/v1/internal/chats/create-check")
     );
 
     private static final List<ProtectedRoute> PROTECTED_ROUTES = List.of(
