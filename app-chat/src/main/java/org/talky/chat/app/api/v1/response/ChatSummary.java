@@ -1,9 +1,9 @@
 package org.talky.chat.app.api.v1.response;
 
 public record ChatSummary(
-        String channelId,
+        String chatId,
         String type,
-        String channelName,
+        String chatName,
         LastMessageInfo lastMessage,
         int unreadCount
 ) {

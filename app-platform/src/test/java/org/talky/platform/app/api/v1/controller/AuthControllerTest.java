@@ -275,7 +275,7 @@ class AuthControllerTest {
             .when()
                 .post("/api/v1/auth/register");
 
-            UserEntity entity = userRepository.findByLoginId("bannedlogin1").orElseThrow();
+            UserEntity entity = userRepository.findByLoginIdAndStatusNot("bannedlogin1", UserStatus.DELETED).orElseThrow();
             userRepository.save(UserEntity.builder()
                     .id(entity.getId())
                     .loginId(entity.getLoginId())
@@ -390,7 +390,7 @@ class AuthControllerTest {
             .when()
                 .post("/api/v1/auth/register");
 
-            Long userId = userRepository.findByLoginId("refreshuser1").orElseThrow().getId();
+            Long userId = userRepository.findByLoginIdAndStatusNot("refreshuser1", UserStatus.DELETED).orElseThrow().getId();
 
             AccessToken expiredAccessToken = SHORT_LIVED_PROVIDER.createAccessToken(userId, UserRole.USER);
             RefreshToken refreshToken = NORMAL_PROVIDER.createRefreshToken(userId);
@@ -437,7 +437,7 @@ class AuthControllerTest {
             .when()
                 .post("/api/v1/auth/register");
 
-            Long userId = userRepository.findByLoginId("bannedrefresh1").orElseThrow().getId();
+            Long userId = userRepository.findByLoginIdAndStatusNot("bannedrefresh1", UserStatus.DELETED).orElseThrow().getId();
 
             AccessToken expiredAccessToken = SHORT_LIVED_PROVIDER.createAccessToken(userId, UserRole.USER);
             RefreshToken refreshToken = NORMAL_PROVIDER.createRefreshToken(userId);
@@ -455,7 +455,7 @@ class AuthControllerTest {
                     .build());
 
             // 밴 처리
-            UserEntity entity = userRepository.findByLoginId("bannedrefresh1").orElseThrow();
+            UserEntity entity = userRepository.findByLoginIdAndStatusNot("bannedrefresh1", UserStatus.DELETED).orElseThrow();
             userRepository.save(UserEntity.builder()
                     .id(entity.getId())
                     .loginId(entity.getLoginId())

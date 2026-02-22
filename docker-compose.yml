@@ -11,3 +11,13 @@ services:
       - "53306:3306"
     volumes:
       - ./storage/platform-db/sql:/docker-entrypoint-initdb.d
+
+  chat-db:
+    image: mongo:7
+    container_name: talky-chat-db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: talky
+      MONGO_INITDB_ROOT_PASSWORD: talky
+      MONGO_INITDB_DATABASE: talky_chat
+    ports:
+      - "57017:27017"

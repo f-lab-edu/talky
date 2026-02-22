@@ -12,6 +12,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.talky.auth.AccessToken;
 import org.talky.auth.JwtTokenProvider;
 import org.talky.auth.UserRole;
+import org.talky.auth.UserStatus;
 import org.talky.platform.app.api.v1.request.RegisterRequest;
 import org.talky.platform.storage.repository.UserRepository;
 import org.talky.platform.support.response.ResultType;
@@ -51,7 +52,7 @@ class UserControllerTest {
             .when()
                 .post("/api/v1/auth/register");
 
-            Long userId = userRepository.findByLoginId("meuser1").orElseThrow().getId();
+            Long userId = userRepository.findByLoginIdAndStatusNot("meuser1", UserStatus.DELETED).orElseThrow().getId();
             AccessToken accessToken = NORMAL_PROVIDER.createAccessToken(userId, UserRole.USER);
 
             given()
@@ -82,7 +83,7 @@ class UserControllerTest {
             .when()
                 .post("/api/v1/auth/register");
 
-            String userTag = userRepository.findByLoginId("profileuser1").orElseThrow().getUserTag();
+            String userTag = userRepository.findByLoginIdAndStatusNot("profileuser1", UserStatus.DELETED).orElseThrow().getUserTag();
             AccessToken accessToken = NORMAL_PROVIDER.createAccessToken(1L, UserRole.USER);
 
             given()

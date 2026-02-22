@@ -8,6 +8,8 @@ import org.talky.platform.app.vo.Profile;
 import org.talky.platform.app.vo.User;
 import org.talky.platform.app.vo.UserProfile;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -23,5 +25,9 @@ public class UserService {
         User user = userReader.findByUserTag(userTag);
         Profile profile = profileReader.findByUserId(user.id());
         return new UserProfile(user, profile);
+    }
+
+    public List<User> findByUserTags(List<String> inviteeTags) {
+        return userReader.findAllByUserTags(inviteeTags);
     }
 }

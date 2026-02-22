@@ -107,7 +107,7 @@ class AuthServiceTest {
         void banned() {
             // given
             registerService.register(new RegisterCommand("banneduser", "password123", "닉네임"));
-            UserEntity entity = userRepository.findByLoginId("banneduser").orElseThrow();
+            UserEntity entity = userRepository.findByLoginIdAndStatusNot("banneduser", UserStatus.DELETED).orElseThrow();
             entity.update(UserEntity.builder()
                     .id(entity.getId())
                     .loginId(entity.getLoginId())
@@ -319,7 +319,7 @@ class AuthServiceTest {
             RefreshToken refreshToken = NORMAL_PROVIDER.createRefreshToken(userId);
             saveSession(userId, expiredAccessToken.jti(), refreshToken.jti());
 
-            UserEntity entity = userRepository.findByLoginId("refreshbanned").orElseThrow();
+            UserEntity entity = userRepository.findByLoginIdAndStatusNot("refreshbanned", UserStatus.DELETED).orElseThrow();
             entity.update(UserEntity.builder()
                     .loginId(entity.getLoginId())
                     .password(entity.getPassword())

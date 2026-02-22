@@ -1,8 +1,11 @@
 package org.talky.chat.app.api.v1.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.talky.auth.AuthUserId;
 import org.talky.chat.app.api.v1.request.CreateChatRequest;
 import org.talky.chat.app.api.v1.response.*;
+import org.talky.chat.app.service.ChatService;
 import org.talky.chat.support.response.ApiResponse;
 import org.talky.chat.support.response.PageResponse;
 import reactor.core.publisher.Mono;
@@ -11,39 +14,25 @@ import java.time.Instant;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/chats")
+@RequestMapping("/api/v1")
+@RequiredArgsConstructor
 public class ChatController {
 
-    @PostMapping
+    private final ChatService chatService;
+
+    @PostMapping("/chats")
     public Mono<ApiResponse<CreateChatResponse>> createChat(
-            @RequestHeader("Authorization") String authorization,
+            @AuthUserId Long userId,
             @RequestBody CreateChatRequest request
     ) {
-        // TODO: 실제 채팅방 생성 로직은 차후 구현
-        String type = switch (request.participantTags().size()) {
-            case 0 -> "self";
-            case 1 -> "direct";
-            default -> "group";
-        };
-
-        List<ParticipantInfo> participants = List.of(
-                new ParticipantInfo("홍길동", "홍길동#1234"),
-                new ParticipantInfo("김철수", "김철수#5678")
-        );
-
-        CreateChatResponse response = new CreateChatResponse(
-                "chat_1a2b3c4d",
-                type,
-                "홍길동, 김철수",
-                participants
-        );
-
-        return Mono.just(ApiResponse.success(response));
+        request.validate();
+        return chatService.createChat(userId, request.inviteeTags(), request.chatName())
+                .map(chat -> ApiResponse.success(CreateChatResponse.from(chat)));
     }
 
-    @GetMapping
+    @GetMapping("/chats")
     public Mono<ApiResponse<PageResponse<ChatSummary>>> getMyChats(
-            @RequestHeader("Authorization") String authorization,
+            @AuthUserId Long userId,
             @RequestParam(defaultValue = "20") int limit,
             @RequestParam(defaultValue = "0") int offset
     ) {
@@ -72,17 +61,17 @@ public class ChatController {
         return Mono.just(ApiResponse.success(pageResponse));
     }
 
-    @GetMapping("/{channelId}/messages")
+    @GetMapping("/chats/{chatId}/messages")
     public Mono<ApiResponse<PageResponse<MessageInfo>>> getMessages(
-            @RequestHeader("Authorization") String authorization,
-            @PathVariable String channelId,
+            @AuthUserId Long userId,
+            @PathVariable String chatId,
             @RequestParam(defaultValue = "20") int limit,
             @RequestParam(defaultValue = "0") int offset
     ) {
         // TODO: 실제 메시지 히스토리 조회 로직은 차후 구현
         MessageInfo message = new MessageInfo(
                 "msg_1a2b3c4d",
-                channelId,
+                chatId,
                 "김철수#5678",
                 "김철수",
                 "안녕하세요!",
