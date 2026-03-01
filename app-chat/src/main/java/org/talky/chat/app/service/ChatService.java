@@ -24,6 +24,8 @@ public class ChatService {
     private final UserChatWriter userChatWriter;
     private final PlatformApiClient platformApiClient;
 
+    //TODO: 두 유저가 동시에 상대방과의 Direct 채팅방을 만드는 경우
+    //TODO: Chat 객체는 저장됐는데, UserChat 저장 중에 서버가 뻗는 경우
     public Mono<Chat> createChat(Long creatorId, List<String> inviteeTags, String chatName) {
         return platformApiClient.validateCreatingChat(creatorId, inviteeTags) // Validation + 채팅 참여자 ID 반환
                 .flatMap(participantIds -> {
