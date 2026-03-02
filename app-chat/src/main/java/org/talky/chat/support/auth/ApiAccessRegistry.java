@@ -25,6 +25,7 @@ public class ApiAccessRegistry {
     private static final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     private static final List<Route> PUBLIC_ROUTES = List.of(
+            Route.of(HttpMethod.GET, "/ws")
     );
 
     private static final List<ProtectedRoute> PROTECTED_ROUTES = List.of(
