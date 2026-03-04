@@ -14,6 +14,7 @@ import org.talky.auth.AccessToken;
 import org.talky.auth.JwtTokenProvider;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.SignalType;
 
 import java.time.Duration;
 import java.util.List;
@@ -31,13 +32,13 @@ public class WebSocketDispatchHandler implements WebSocketHandler {
     private final WebSocketSessionStore sessionStore;
     private final JwtTokenProvider jwtTokenProvider;
     private final ObjectMapper objectMapper;
-    private final Map<WsMessageType, WsMessageHandler<?>> handlerMap;
+    private final Map<WsMessageType, WsMessageHandler<?, ?>> handlerMap;
 
     public WebSocketDispatchHandler(
             WebSocketSessionStore sessionStore,
             JwtTokenProvider jwtTokenProvider,
             ObjectMapper objectMapper,
-            List<WsMessageHandler<?>> handlers
+            List<WsMessageHandler<?, ?>> handlers
     ) {
         this.sessionStore = sessionStore;
         this.jwtTokenProvider = jwtTokenProvider;
@@ -52,21 +53,27 @@ public class WebSocketDispatchHandler implements WebSocketHandler {
                 .flatMap(userId -> {
                     sessionStore.register(userId, session);
                     log.info("[WebSocket 연결] userId={}, sessionId={}", userId, session.getId());
-
-                    return session.send(
-                            session.receive()
-                                    .timeout(Duration.ofSeconds(HEARTBEAT_TIMEOUT_SECONDS))
-                                    .flatMap(msg -> processMessage(msg, session))
-                                    .onErrorResume(TimeoutException.class, e -> {
-                                        log.info("[WebSocket 타임아웃] userId={}, sessionId={}", userId, session.getId());
-                                        return Flux.empty();
-                                    })
-                    ).doFinally(signal -> {
-                        sessionStore.remove(userId, session);
-                        log.info("[WebSocket 연결 해제] userId={}, sessionId={}, signal={}", userId, session.getId(), signal);
-                    });
+                    return session.send(buildResponseStream(session, userId))
+                            .doFinally(signal -> onDisconnect(userId, session, signal));
                 })
                 .onErrorResume(e -> sendAuthFailed(session, e));
+    }
+
+    private Flux<WebSocketMessage> buildResponseStream(WebSocketSession session, Long userId) {
+        Flux<WebSocketMessage> connected = Flux.just(session.textMessage(toJson(ConnectedMessage.create())));
+        Flux<WebSocketMessage> inbound = session.receive()
+                .timeout(Duration.ofSeconds(HEARTBEAT_TIMEOUT_SECONDS))
+                .flatMap(msg -> processMessage(msg, session))
+                .onErrorResume(TimeoutException.class, e -> {
+                    log.info("[WebSocket 타임아웃] userId={}, sessionId={}", userId, session.getId());
+                    return Flux.empty();
+                });
+        return Flux.concat(connected, inbound);
+    }
+
+    private void onDisconnect(Long userId, WebSocketSession session, SignalType signal) {
+        sessionStore.remove(userId, session);
+        log.info("[WebSocket 연결 해제] userId={}, sessionId={}, signal={}", userId, session.getId(), signal);
     }
 
     private Flux<WebSocketMessage> processMessage(WebSocketMessage rawMsg, WebSocketSession session) {
@@ -74,7 +81,7 @@ public class WebSocketDispatchHandler implements WebSocketHandler {
         try {
             JsonNode node = objectMapper.readTree(payload);
             WsMessageType type = objectMapper.convertValue(node.get("type"), WsMessageType.class);
-            WsMessageHandler<?> handler = handlerMap.get(type);
+            WsMessageHandler<?, ?> handler = handlerMap.get(type);
             if (handler == null) {
                 return Flux.empty();
             }
@@ -85,7 +92,7 @@ public class WebSocketDispatchHandler implements WebSocketHandler {
         }
     }
 
-    private <T> Flux<WebSocketMessage> dispatch(WsMessageHandler<T> handler, JsonNode node, WebSocketSession session) throws Exception {
+    private <T, R> Flux<WebSocketMessage> dispatch(WsMessageHandler<T, R> handler, JsonNode node, WebSocketSession session) throws Exception {
         T message = objectMapper.treeToValue(node, handler.payloadType());
         return handler.handle(message)
                 .map(response -> session.textMessage(toJson(response)));
@@ -93,7 +100,7 @@ public class WebSocketDispatchHandler implements WebSocketHandler {
 
     private Mono<Void> sendAuthFailed(WebSocketSession session, Throwable e) {
         log.warn("[WebSocket 인증 실패] sessionId={}, reason={}", session.getId(), e.getMessage());
-        return session.send(Mono.just(session.textMessage(toJson(WsMessage.authFailed()))))
+        return session.send(Mono.just(session.textMessage(toJson(AuthFailedMessage.create()))))
                 .then(session.close(CloseStatus.POLICY_VIOLATION));
     }
 
@@ -107,7 +114,7 @@ public class WebSocketDispatchHandler implements WebSocketHandler {
         return accessToken.userId();
     }
 
-    private String toJson(WsMessage message) {
+    private String toJson(Object message) {
         try {
             return objectMapper.writeValueAsString(message);
         } catch (JsonProcessingException e) {

@@ -4,7 +4,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
 @Component
-public class PingMessageHandler implements WsMessageHandler<PingMessage> {
+public class PingMessageHandler implements WsMessageHandler<PingMessage, PongMessage> {
 
     @Override
     public WsMessageType supportedType() {
@@ -17,7 +17,7 @@ public class PingMessageHandler implements WsMessageHandler<PingMessage> {
     }
 
     @Override
-    public Flux<WsMessage> handle(PingMessage payload) {
-        return Flux.just(WsMessage.pong());
+    public Flux<PongMessage> handle(PingMessage payload) {
+        return Flux.just(PongMessage.create());
     }
 }
