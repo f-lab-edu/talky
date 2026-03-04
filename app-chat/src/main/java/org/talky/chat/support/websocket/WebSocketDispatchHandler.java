@@ -12,6 +12,8 @@ import org.springframework.web.reactive.socket.WebSocketSession;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.talky.auth.AccessToken;
 import org.talky.auth.JwtTokenProvider;
+import org.talky.chat.support.websocket.message.outbound.AuthFailOutMsg;
+import org.talky.chat.support.websocket.message.outbound.ConnectedOutMsg;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
@@ -60,7 +62,7 @@ public class WebSocketDispatchHandler implements WebSocketHandler {
     }
 
     private Flux<WebSocketMessage> buildResponseStream(WebSocketSession session, Long userId) {
-        Flux<WebSocketMessage> connected = Flux.just(session.textMessage(toJson(ConnectedMessage.create())));
+        Flux<WebSocketMessage> connected = Flux.just(session.textMessage(toJson(ConnectedOutMsg.create())));
         Flux<WebSocketMessage> inbound = session.receive()
                 .timeout(Duration.ofSeconds(HEARTBEAT_TIMEOUT_SECONDS))
                 .flatMap(msg -> processMessage(msg, session))
@@ -100,7 +102,7 @@ public class WebSocketDispatchHandler implements WebSocketHandler {
 
     private Mono<Void> sendAuthFailed(WebSocketSession session, Throwable e) {
         log.warn("[WebSocket 인증 실패] sessionId={}, reason={}", session.getId(), e.getMessage());
-        return session.send(Mono.just(session.textMessage(toJson(AuthFailedMessage.create()))))
+        return session.send(Mono.just(session.textMessage(toJson(AuthFailOutMsg.create()))))
                 .then(session.close(CloseStatus.POLICY_VIOLATION));
     }
 

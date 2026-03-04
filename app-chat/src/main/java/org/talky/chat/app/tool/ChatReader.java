@@ -19,4 +19,9 @@ public class ChatReader {
         return chatRepository.findByParticipantIds(participantIds, participantIds.size())
                 .map(chatMapper::toVo);
     }
+
+    public Mono<Chat> findById(Long chatId) {
+        return chatRepository.findById(chatId)
+                .map(chatMapper::toVo);
+    }
 }

@@ -1,10 +1,12 @@
 package org.talky.chat.support.websocket;
 
 import org.springframework.stereotype.Component;
+import org.talky.chat.support.websocket.message.inbound.PingInMsg;
+import org.talky.chat.support.websocket.message.outbound.PongOutMsg;
 import reactor.core.publisher.Flux;
 
 @Component
-public class PingMessageHandler implements WsMessageHandler<PingMessage, PongMessage> {
+public class PingMessageHandler implements WsMessageHandler<PingInMsg, PongOutMsg> {
 
     @Override
     public WsMessageType supportedType() {
@@ -12,12 +14,12 @@ public class PingMessageHandler implements WsMessageHandler<PingMessage, PongMes
     }
 
     @Override
-    public Class<PingMessage> payloadType() {
-        return PingMessage.class;
+    public Class<PingInMsg> payloadType() {
+        return PingInMsg.class;
     }
 
     @Override
-    public Flux<PongMessage> handle(PingMessage payload) {
-        return Flux.just(PongMessage.create());
+    public Flux<PongOutMsg> handle(PingInMsg payload) {
+        return Flux.just(PongOutMsg.create());
     }
 }
