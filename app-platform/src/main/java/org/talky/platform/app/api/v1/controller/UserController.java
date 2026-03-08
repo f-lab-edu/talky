@@ -2,6 +2,8 @@ package org.talky.platform.app.api.v1.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.concurrent.CompletableFuture;
 import org.talky.auth.AuthUserId;
 import org.talky.platform.app.api.v1.response.MyInfoResponse;
 import org.talky.platform.app.api.v1.response.UserProfileResponse;
@@ -26,10 +28,10 @@ public class UserController {
     }
 
     @GetMapping("/{userTag}/profile")
-    public ApiResponse<UserProfileResponse> getUserProfile(
+    public CompletableFuture<ApiResponse<UserProfileResponse>> getUserProfile(
             @PathVariable String userTag
     ) {
-        UserProfile userProfile = userService.getUserProfile(userTag);
-        return ApiResponse.success(UserProfileResponse.from(userProfile));
+        return userService.getUserProfileAsync(userTag)
+                .thenApply(userProfile -> ApiResponse.success(UserProfileResponse.from(userProfile)));
     }
 }
