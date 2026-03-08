@@ -5,9 +5,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.HandlerMapping;
 import org.springframework.web.reactive.handler.SimpleUrlHandlerMapping;
-import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.server.support.WebSocketHandlerAdapter;
-import org.talky.chat.support.websocket.WebSocketDispatchHandler;
+import org.talky.chat.support.websocket.WebSocketDispatcher;
 
 import java.util.Map;
 
@@ -15,12 +14,12 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class WebSocketConfig {
 
-    private final WebSocketDispatchHandler webSocketDispatchHandler;
+    private final WebSocketDispatcher webSocketDispatcher;
 
     @Bean
     public HandlerMapping webSocketHandlerMapping() {
         SimpleUrlHandlerMapping mapping = new SimpleUrlHandlerMapping();
-        mapping.setUrlMap(Map.of("/ws", webSocketDispatchHandler));
+        mapping.setUrlMap(Map.of("/ws", webSocketDispatcher));
         mapping.setOrder(-1);
         return mapping;
     }
