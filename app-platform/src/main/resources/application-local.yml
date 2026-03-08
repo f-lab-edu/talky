@@ -4,3 +4,7 @@ server:
 spring:
   config:
     import: classpath:platform-db-local.yml
+logging:
+  level:
+    org.springframework.web: debug
+    org.springframework.web.context.request.async: TRACE

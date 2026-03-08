@@ -9,6 +9,7 @@ import org.talky.platform.app.vo.User;
 import org.talky.platform.app.vo.UserProfile;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +26,14 @@ public class UserService {
         User user = userReader.findByUserTag(userTag);
         Profile profile = profileReader.findByUserId(user.id());
         return new UserProfile(user, profile);
+    }
+
+    public CompletableFuture<UserProfile> getUserProfileAsync(String userTag) {
+        return CompletableFuture.supplyAsync(() -> {
+            User user = userReader.findByUserTag(userTag);
+            Profile profile = profileReader.findByUserId(user.id());
+            return new UserProfile(user, profile);
+        });
     }
 
     public List<User> findByUserTags(List<String> inviteeTags) {
