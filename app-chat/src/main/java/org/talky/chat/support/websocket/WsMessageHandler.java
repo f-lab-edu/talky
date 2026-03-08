@@ -4,7 +4,7 @@ import reactor.core.publisher.Flux;
 
 public interface WsMessageHandler<T, R> {
 
-    WsMessageType supportedType();
+    MessageType.In supportedType();
 
     Class<T> payloadType();
 

@@ -2,3 +2,4 @@ spring:
   data:
     mongodb:
       uri: mongodb://talky:talky@localhost:57017/talky_chat?authSource=admin
+      auto-index-creation: true
